@@ -1,0 +1,48 @@
+.App {
+  text-align: center;
+}
+
+h1 {
+  padding-top: 40px;
+}
+
+input {
+  padding: 8px;
+  width: 300px;
+  margin-right: 10px;
+}
+
+button {
+  padding: 8px 15px;
+}
+
+.episode-list {
+  /* display: flex;
+  flex-wrap: wrap; */
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.episode-card {
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  padding: 15px;
+  margin: 10px;
+  /* width: 250px; */
+  text-align: left;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease;
+}
+
+.episode-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.episode-card h3 {
+  font-size: 1.2em;
+}
+
+.error {
+  color: red;
+  margin-top: 10px;
+}
