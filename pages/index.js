@@ -1,6 +1,7 @@
 import React, { Component, useState } from 'react';
 import Parser from 'rss-parser';
 import Layout from '../components/Layout';
+import TypingPageHeader from '../components/TypingPageHeader';
 
 const PodcastFeedPage = () => {
   const [feedUrl, setFeedUrl] = useState('');
@@ -60,7 +61,6 @@ const PodcastFeedPage = () => {
   };
 
   const handleCopyToClipboard = () => {
-    console.log('here');
     navigator.clipboard.writeText(responseMessage).then(() => {
       setShowToast(true);
       setTimeout(() => setShowToast(false), 2000); // Hide toast after 2 seconds
@@ -109,13 +109,14 @@ const PodcastFeedPage = () => {
 
       <div className="row">
         <div className="col-12 text-center">
-          <h1>Podcast RSS Feed Parser</h1>
+          <TypingPageHeader text="Podcast to LinkedIn Post Generator" />
         </div>
         <div className="col-12 text-center">
           <form onSubmit={handleSubmit}>
             <input
+              style={{width: 450}}
               type="text"
-              placeholder="Enter RSS feed URL"
+              placeholder="Enter podcast RSS feed URL"
               value={feedUrl}
               onChange={(e) => setFeedUrl(e.target.value)}
             />

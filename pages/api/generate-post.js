@@ -131,7 +131,7 @@ async function splitMP3(filePath) {
 
 // Helper function to get chunk duration in seconds based on file size
 async function getChunkDurationInSeconds(filePath, numberOfChunks) {
-  const MP3_DURATION_PER_MB = 24; // Approximate average duration of 1MB of MP3 is 1 minute (adjust as needed)
+  const MP3_DURATION_PER_MB = 24; // Approximate average duration of 1MB of MP3
   const totalDuration = MP3_DURATION_PER_MB * numberOfChunks * MAX_SIZE_MB;
   const chunkDuration = totalDuration / numberOfChunks;
 
@@ -243,11 +243,11 @@ export default async function handler(req, res) {
 
     try {
       // Step 1: Transcribe the MP3 file
-      const transcriptions = await transcribeAudio(mp3Url);
-      console.log('Transcription:', transcriptions);
+      const transcriptionText = await transcribeAudio(mp3Url);
+      console.log('Transcription:', transcriptionText);
 
       // Step 2: Generate the LinkedIn post using the transcription
-      linkedInPost = await generateLinkedInPost(transcriptions, episodeDescription, 'Glauber Costa', 'Turso');
+      linkedInPost = await generateLinkedInPost(transcriptionText, episodeDescription, 'Glauber Costa', 'Turso');
       console.log('Generated LinkedIn Post:', linkedInPost);
   
       // return linkedInPost;
