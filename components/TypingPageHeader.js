@@ -8,7 +8,6 @@ const TypingPageHeader = ({ text, typingSpeed = 50 }) => {
 
     // Create an interval to add one character at a time
     const interval = setInterval(() => {
-      console.log(currentIndex);
       if (currentIndex < text.length) {
         setDisplayedText((prev) => {
           const newText = prev + text[currentIndex];

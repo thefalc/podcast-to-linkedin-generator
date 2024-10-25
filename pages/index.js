@@ -1,4 +1,4 @@
-import React, { Component, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Parser from 'rss-parser';
 import Layout from '../components/Layout';
 import TypingPageHeader from '../components/TypingPageHeader';
@@ -10,10 +10,14 @@ const PodcastFeedPage = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false); // State for modal visibility
   const [responseMessage, setResponseMessage] = useState(''); // State for server response
+  const [responseMP3Url, setResponseMP3Url] = useState('');
+  const [responseEpisodeDescription, setEpisodeDescription] = useState('');
   const [showModal, setShowModal] = useState(false); // State to manage modal visibility
   const [showToast, setShowToast] = useState(false); // State to manage toast visibility
 
   const parser = new Parser();
+
+  let modalClickEventAdded = false;
 
   const fetchPodcastEpisodes = async () => {
     setError(null);
@@ -32,7 +36,10 @@ const PodcastFeedPage = () => {
     fetchPodcastEpisodes();
   };
 
-  const handleCardClick = async (mp3Url, episodeDescription) => {
+  const handleCardClick = async (mp3Url, episodeDescription, regenerate) => {
+    if (regenerate === undefined) {
+      regenerate = false;
+    }
     setLoading(true);
     setShowModal(true);
     setResponseMessage('');
@@ -43,7 +50,7 @@ const PodcastFeedPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ mp3Url, episodeDescription }),
+        body: JSON.stringify({ mp3Url, episodeDescription, regenerate }),
       });
 
       if (!response.ok) {
@@ -52,6 +59,8 @@ const PodcastFeedPage = () => {
 
       const responseData = await response.json(); // Assuming the response is JSON
       setResponseMessage(responseData.linkedInPost || 'Successfully processed'); // Display server message
+      setResponseMP3Url(responseData.mp3Url);
+      setEpisodeDescription(responseData.episodeDescription);
 
       console.log('MP3 URL posted successfully:', mp3Url);
     } catch (error) {
@@ -69,19 +78,40 @@ const PodcastFeedPage = () => {
     }).catch((err) => console.error("Failed to copy text: ", err));
   };
 
+  const handlePostToLinkedIn = () => {
+    const linkedInUrl = `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(responseMessage)}`;
+    window.open(linkedInUrl, '_blank');
+  };
+
+  useEffect(() => {
+    const modal = document.getElementById('modal');
+    if (modal && !modalClickEventAdded) {
+      // Event listener to close the modal when clicking outside of modal content
+      modal.addEventListener('click', function(event) {
+        modalClickEventAdded = true;
+        const modalContent = document.querySelector('.modal-content');
+        console.log(modalContent);
+        if (modalContent != undefined && !modalContent.contains(event.target)) {
+          modalClickEventAdded = false;
+          setShowModal(false);
+        }
+      });
+    }
+  });
+
   return (
     <Layout title="Podcast to LinkedIn Post Generator">
       {showModal && (
-        <div className="modal">
+        <div id="modal" className="modal">
           <div className="modal-content">
             {loading ? (
               <p>Processing podcast... Please wait.</p>
             ) : (
               <div className="row">
-                <div class="col-12 text-center">
+                <div className="col-12 text-center">
                   <p>Processing complete. Here's your result:</p>
                 </div>
-                <div class="col-12">
+                <div className="col-12">
                   <textarea
                     readOnly
                     value={responseMessage}
@@ -89,12 +119,16 @@ const PodcastFeedPage = () => {
                     rows={3}
                   />
                 </div>
-                <div class="col-12">
-                  <button className="btn btn-light" onClick={handleCopyToClipboard}>Copy to Clipboard</button>
+                <div className="col-12">
+                  <button className="btn btn-link" onClick={() => handleCardClick(responseMP3Url, responseEpisodeDescription, true)}>Regenerate</button>
+                  <button className="btn btn-link" onClick={handleCopyToClipboard}>Copy to Clipboard</button>
+                  <button className="btn btn-success" onClick={handlePostToLinkedIn}>Post to LinkedIn</button>
                 </div>
               </div>
             )}
-            <button className="btn btn-link" onClick={() => setShowModal(false)}>Close</button>
+            {loading && (
+              <button className="btn btn-link" onClick={() => setShowModal(false)}>Close</button>
+            )}
           </div>
         </div>
       )}
@@ -140,7 +174,7 @@ const PodcastFeedPage = () => {
               onClick={() => handleCardClick(episode.enclosure?.url, episode.contentSnippet)}
             >
               <h3>{episode.title}</h3>
-              <p>{episode.contentSnippet || episode.description}</p>
+              <p className="truncate-text">{episode.contentSnippet || episode.description}</p>
             </div>
           ))}
       </div>
