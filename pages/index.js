@@ -6,6 +6,11 @@ const PodcastFeedPage = () => {
   const [feedUrl, setFeedUrl] = useState('');
   const [episodes, setEpisodes] = useState([]);
   const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false); // State for modal visibility
+  const [responseMessage, setResponseMessage] = useState(''); // State for server response
+  const [showModal, setShowModal] = useState(false); // State to manage modal visibility
+  const [showToast, setShowToast] = useState(false); // State to manage toast visibility
+
   const parser = new Parser();
 
   const fetchPodcastEpisodes = async () => {
@@ -24,34 +29,89 @@ const PodcastFeedPage = () => {
     fetchPodcastEpisodes();
   };
 
-  const handleCardClick = async (mp3Url) => {
-    try {
-      alert(mp3Url);
-      // const response = await fetch('/api/post-mp3-url', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify({ mp3Url }),
-      // });
+  const handleCardClick = async (mp3Url, episodeDescription) => {
+    setLoading(true);
+    setShowModal(true);
+    setResponseMessage('');
 
-      // if (!response.ok) {
-      //   throw new Error('Failed to post MP3 URL');
-      // }
+    try {
+      const response = await fetch('/api/generate-post', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ mp3Url, episodeDescription }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to post MP3 URL');
+      }
+
+      const responseData = await response.json(); // Assuming the response is JSON
+      setResponseMessage(responseData.linkedInPost || 'Successfully processed'); // Display server message
 
       console.log('MP3 URL posted successfully:', mp3Url);
     } catch (error) {
-      console.error('Error posting MP3 URL:', error);
+      setResponseMessage('Error processing podcast. Please try again later.');
+      console.error('Error processing podcast:', error);
+    } finally {
+      setLoading(false); // Stop loading spinner
     }
   };
 
+  const handleCopyToClipboard = () => {
+    console.log('here');
+    navigator.clipboard.writeText(responseMessage).then(() => {
+      setShowToast(true);
+      setTimeout(() => setShowToast(false), 2000); // Hide toast after 2 seconds
+    }).catch((err) => console.error("Failed to copy text: ", err));
+  };
+
   return (
-    <Layout title="Podcast LinkedIn Post Generator">
-      <div class="row">
-        <div class="col-12 text-center">
+    <Layout title="Podcast to LinkedIn Post Generator">
+      {showModal && (
+        <div className="modal">
+          <div className="modal-content">
+            {loading ? (
+              <p>Processing podcast... Please wait.</p>
+            ) : (
+              <div className="row">
+                <div class="col-12 text-center">
+                  <p>Processing complete. Here's your result:</p>
+                </div>
+                <div class="col-12">
+                  <textarea
+                    readOnly
+                    value={responseMessage}
+                    onFocus={(e) => e.target.select()} // Select text on click for easy copying
+                    rows={3}
+                  />
+                </div>
+                <div class="col-12">
+                  <button className="btn btn-light" onClick={handleCopyToClipboard}>Copy to Clipboard</button>
+                </div>
+              </div>
+            )}
+            <button className="btn btn-link" onClick={() => setShowModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
+
+      {showToast && (
+        <div aria-live="polite" aria-atomic="true" style={{ position: "relative", zIndex: 100000 }}>
+        <div className="toast" style={{ position: "absolute", top: 10, right: 10, display: "flex" }}>
+          <div className="toast-body">
+            Text copied to clipboard!
+          </div>
+        </div>
+      </div>
+      )}
+
+      <div className="row">
+        <div className="col-12 text-center">
           <h1>Podcast RSS Feed Parser</h1>
         </div>
-        <div class="col-12 text-center">
+        <div className="col-12 text-center">
           <form onSubmit={handleSubmit}>
             <input
               type="text"
@@ -63,7 +123,6 @@ const PodcastFeedPage = () => {
           </form>
         </div>
       </div>
-      
 
       {error && <p className="error">{error}</p>}
 
@@ -73,7 +132,7 @@ const PodcastFeedPage = () => {
             <div
               key={index}
               className="episode-card col-3"
-              onClick={() => handleCardClick(episode.enclosure?.url)}
+              onClick={() => handleCardClick(episode.enclosure?.url, episode.contentSnippet)}
             >
               <h3>{episode.title}</h3>
               <p>{episode.contentSnippet || episode.description}</p>
