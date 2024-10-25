@@ -15,7 +15,7 @@ Currently, only the first chunk of audio is used (about 10 minutes) of the podca
 cost and the time to generate the post. Even with 10 minutes of transcription, the results are
 quite good.
 
-If you want to adjust the instructions, you can find the system message in [**/util/prompt-constants.js**](//util/prompt-constants.js).
+If you want to adjust the instructions, you can find the system message in **/util/prompt-constants.js**.
 
 ## What you'll need
 
@@ -43,6 +43,6 @@ git clone https://github.com/thefalc/podcast-to-linkedin-generator.git
 npm install
 npm run dev
 ```
-2. From your browser, navigate to **http://localhost:3000** and you should see the LinkedIn generator app page.
+2. From your browser, navigate to http://localhost:3000 and you should see the LinkedIn generator app page.
 3. Enter a podcast feed URL, e.g. https://feeds.megaphone.fm/SWUET7254106891, and click Fetch Episodes.
 4. Click on one of the episodes and if everything is set up correctly, you should see a generated LinkedIn post.
