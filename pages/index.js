@@ -5,6 +5,7 @@ import TypingPageHeader from '../components/TypingPageHeader';
 
 const PodcastFeedPage = () => {
   const [feedUrl, setFeedUrl] = useState('');
+  const [submitted, setSubmitted] = useState(false);
   const [episodes, setEpisodes] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false); // State for modal visibility
@@ -27,6 +28,7 @@ const PodcastFeedPage = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    setSubmitted(true); // Set submitted to true after form submission
     fetchPodcastEpisodes();
   };
 
@@ -107,25 +109,27 @@ const PodcastFeedPage = () => {
       </div>
       )}
 
-      <div className="row">
-        <div className="col-12 text-center">
-          <TypingPageHeader text="Podcast to LinkedIn Post Generator" />
-        </div>
-        <div className="col-12 text-center">
-          <form onSubmit={handleSubmit}>
-            <input
-              style={{width: 450}}
-              type="text"
-              placeholder="Enter podcast RSS feed URL"
-              value={feedUrl}
-              onChange={(e) => setFeedUrl(e.target.value)}
-            />
-            <button type="submit" className="btn btn-success">Fetch Episodes</button>
-          </form>
+      <div className={`container ${submitted ? 'top-align' : 'center-align'}`}>
+        <div className="row">
+          <div className="col-12 text-center">
+            <TypingPageHeader text="Podcast to LinkedIn Post Generator" />
+          </div>
+          <div className="col-12 text-center">
+            <form onSubmit={handleSubmit}>
+              <input
+                style={{width: 450}}
+                type="text"
+                placeholder="Enter podcast RSS feed URL"
+                value={feedUrl}
+                onChange={(e) => setFeedUrl(e.target.value)}
+              />
+              <button type="submit" className="btn btn-success">Fetch Episodes</button>
+            </form>
+          </div>
         </div>
       </div>
 
-      {error && <p className="error">{error}</p>}
+      {error && <p className="error text-center">{error}</p>}
 
       <div className="episode-list row">
         {episodes.length > 0 &&

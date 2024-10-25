@@ -4,7 +4,7 @@
 
 h1 {
   padding-top: 40px;
-  padding-bottom: 20px;
+  padding-bottom: 10px;
 }
 
 input {
@@ -17,9 +17,20 @@ button {
   padding: 8px 15px;
 }
 
+.container.center-align {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh; /* Center vertically */
+}
+
+.container.top-align {
+  margin-top: 20px; /* Adjust as needed */
+  display: block;
+}
+
 .episode-list {
-  /* display: flex;
-  flex-wrap: wrap; */
   justify-content: center;
   margin-top: 20px;
 }
@@ -29,7 +40,6 @@ button {
   border-radius: 5px;
   padding: 15px;
   margin: 10px;
-  /* width: 250px; */
   text-align: left;
   cursor: pointer;
   transition: box-shadow 0.3s ease;

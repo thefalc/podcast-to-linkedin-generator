@@ -217,13 +217,18 @@ async function generateLinkedInPost(transcriptionText, episodeDescription) {
     Generate a concise LinkedIn post that highlights the main points of the podcast while mentioning the guest and their company.
   `;
 
+  console.log(userPrompt);
+
   const input = [
     {
       role: "user",
       content: userPrompt,
     },
   ];
+
   const output = await app.invoke({ messages: input }, config);
+
+  console.log(output);
 
   let content = output.messages[output.messages.length - 1].content;
 
