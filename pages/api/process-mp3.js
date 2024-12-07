@@ -1,58 +1,6 @@
 import { OpenAIWhisperAudio } from '@langchain/community/document_loaders/fs/openai_whisper_audio';
-import { ChatOpenAI } from '@langchain/openai';
 import fs from 'fs';
-
-const cache = {}; // Simple in-memory cache
-
-const {
-  SYSTEM_PROMPT
-} = require('../../util/prompt-constants');
-
-import {
-  START,
-  END,
-  MessagesAnnotation,
-  StateGraph,
-  MemorySaver,
-} from "@langchain/langgraph";
-
-import {
-  ChatPromptTemplate,
-  MessagesPlaceholder,
-} from "@langchain/core/prompts";
-
-const llm = new ChatOpenAI({
-  model: "gpt-4o-mini",
-  temperature: 0.7
-});
-
-export const prompt = ChatPromptTemplate.fromMessages([
-  [
-    "system",
-    SYSTEM_PROMPT,
-  ],
-  new MessagesPlaceholder("messages"),
-]);
-
-// Define the function that calls the model
-const callModel = async (state) => {
-  const chain = prompt.pipe(llm);
-  const response = await chain.invoke(state);
-
-  return { messages: [response] };
-};
-
-// Define a new graph
-const workflow = new StateGraph(MessagesAnnotation)
-  // Define the node and edge
-  .addNode("model", callModel)
-  .addEdge(START, "model")
-  .addEdge("model", END);
-
-// Add memory, note, not really using memory right now, but might be worth doing a few shot
-// learning pass to give examples of good LinkedIn posts
-const memory = new MemorySaver();
-const app = workflow.compile({ checkpointer: memory });
+const { publishToTopic, LINKEDIN_PODCAST_MP3_TOPIC } = require("../../util/publish-to-topic");
 
 const { v4: uuidv4 } = require('uuid');
 const axios = require('axios');
@@ -198,86 +146,34 @@ async function transcribeAudio(mp3Url) {
 
     console.log(docs);
 
-    let transcription = docs[0].pageContent;
-    transcriptions.push(transcription);
+    let transcriptionText = docs[0].pageContent;
+    transcriptions.push(transcriptionText);
+
+    // Write transcription to Kafka
+    publishToTopic(LINKEDIN_PODCAST_MP3_TOPIC, [ { mp3Url, transcriptionText } ]);
 
     // only doing one transcription for now
     break;
   }
 
   cleanUpFiles(filePath, mp3Files);
-
-  return transcriptions;
-}
-
-// Function to generate LinkedIn post
-async function generateLinkedInPost(transcriptionText, episodeDescription) {
-  const config = { configurable: { thread_id: uuidv4() } };
-
-  const userPrompt = `
-    Podcast Description:
-    ${episodeDescription}
-
-    Podcast Transcript:
-    ${transcriptionText}
-
-    Generate a concise LinkedIn post that highlights the main points of the podcast while mentioning the guest and their company.
-  `;
-
-  console.log(userPrompt);
-
-  const input = [
-    {
-      role: "user",
-      content: userPrompt,
-    },
-  ];
-
-  const output = await app.invoke({ messages: input }, config);
-
-  console.log(output);
-
-  let content = output.messages[output.messages.length - 1].content;
-
-  console.log(content);
-
-  return content;
 }
 
 export default async function handler(req, res) {
   // Check for the HTTP method if needed, e.g., if it's a POST or GET request
   if (req.method === 'POST') {
-    let postBody = req.body;
-    let mp3Url = postBody.mp3Url;
-    let episodeDescription = postBody.episodeDescription;
-    let regenerate = postBody.regenerate;
+    let body = JSON.parse(req.body);
 
-    let linkedInPost = '';
+    for(let i = 0; i < body.length; i++) {
+      let mp3Url = body[i].mp3Url;
 
-    try {
-      if (!regenerate && cache[mp3Url]) {
-        console.log('Fetching from cache');
-        linkedInPost = cache[mp3Url];
-      }
-      else {
-        // Step 1: Transcribe the MP3 file
-        const transcriptionText = await transcribeAudio(mp3Url);
-        console.log('Transcription:', transcriptionText);
+      console.log(mp3Url);
 
-        // Step 2: Generate the LinkedIn post using the transcription
-        linkedInPost = await generateLinkedInPost(transcriptionText, episodeDescription, 'Glauber Costa', 'Turso');
-        console.log('Generated LinkedIn Post:', linkedInPost);
-
-        // Cache the result
-        cache[mp3Url] = linkedInPost;
-      }
-    } catch (error) {
-      console.error('Error processing podcast episode:', error);
-    }
+      transcribeAudio(mp3Url);
+    }    
 
     // Return a JSON response with ok: true
-    res.status(200).json({ ok: true, linkedInPost: linkedInPost,
-      mp3Url: mp3Url, episodeDescription: episodeDescription });
+    res.status(200).json({ ok: true });
   } else {
     // Handle other HTTP methods, e.g., if a GET request is made instead of POST
     res.setHeader('Allow', ['POST']);

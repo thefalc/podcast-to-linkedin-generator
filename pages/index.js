@@ -10,10 +10,11 @@ const PodcastFeedPage = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false); // State for modal visibility
   const [responseMessage, setResponseMessage] = useState(''); // State for server response
-  const [responseMP3Url, setResponseMP3Url] = useState('');
+  const [mp3Url, setMp3Url] = useState('');
   const [responseEpisodeDescription, setEpisodeDescription] = useState('');
   const [showModal, setShowModal] = useState(false); // State to manage modal visibility
   const [showToast, setShowToast] = useState(false); // State to manage toast visibility
+  const [pollingInterval, setPollingInterval] = useState(null);
 
   const parser = new Parser();
 
@@ -36,16 +37,53 @@ const PodcastFeedPage = () => {
     fetchPodcastEpisodes();
   };
 
+  const getDataFromCache = async (mp3Url) => {
+    const response = await fetch('/api/get-post-from-cache', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ mp3Url }),
+    });
+
+    const responseData = await response.json();
+
+    if ('linkedInPost' in responseData) {
+      // console.log(responseData);
+      setResponseMessage(responseData.linkedInPost || 'Successfully processed'); // Display server message
+
+      return true;
+    }
+
+    return false;
+  }
+
+  const startPolling = (mp3Url) => {
+    if (pollingInterval) return; // Avoid multiple intervals
+    const interval = setInterval(async () => {
+      console.log('startPolling responseMP3Url: ' + mp3Url);
+      const isComplete = await getDataFromCache(mp3Url);
+      if (isComplete) {
+        setLoading(false);
+        clearInterval(interval);
+        setPollingInterval(null); // Clear the interval ID
+      }
+    }, 1000); // Poll every 1 second
+    setPollingInterval(interval);
+  };
+
   const handleCardClick = async (mp3Url, episodeDescription, regenerate) => {
     if (regenerate === undefined) {
       regenerate = false;
     }
+    setMp3Url(mp3Url);
+    setEpisodeDescription(episodeDescription);
     setLoading(true);
     setShowModal(true);
     setResponseMessage('');
 
     try {
-      const response = await fetch('/api/generate-post', {
+      const response = await fetch('/api/linkedin-post-request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -57,17 +95,12 @@ const PodcastFeedPage = () => {
         throw new Error('Failed to post MP3 URL');
       }
 
-      const responseData = await response.json(); // Assuming the response is JSON
-      setResponseMessage(responseData.linkedInPost || 'Successfully processed'); // Display server message
-      setResponseMP3Url(responseData.mp3Url);
-      setEpisodeDescription(responseData.episodeDescription);
-
+      startPolling(mp3Url);
+      
       console.log('MP3 URL posted successfully:', mp3Url);
     } catch (error) {
       setResponseMessage('Error processing podcast. Please try again later.');
       console.error('Error processing podcast:', error);
-    } finally {
-      setLoading(false); // Stop loading spinner
     }
   };
 
@@ -83,6 +116,16 @@ const PodcastFeedPage = () => {
     window.open(linkedInUrl, '_blank');
   };
 
+  const closeModal = () => {
+    setLoading(false);
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+
+    setShowModal(false);
+  };
+
   useEffect(() => {
     const modal = document.getElementById('modal');
     if (modal && !modalClickEventAdded) {
@@ -93,7 +136,7 @@ const PodcastFeedPage = () => {
         console.log(modalContent);
         if (modalContent != undefined && !modalContent.contains(event.target)) {
           modalClickEventAdded = false;
-          setShowModal(false);
+          closeModal();
         }
       });
     }
@@ -115,19 +158,19 @@ const PodcastFeedPage = () => {
                   <textarea
                     readOnly
                     value={responseMessage}
-                    onFocus={(e) => e.target.select()} // Select text on click for easy copying
+                    onFocus={(e) => e.target.select()}
                     rows={3}
                   />
                 </div>
                 <div className="col-12">
-                  <button className="btn btn-link" onClick={() => handleCardClick(responseMP3Url, responseEpisodeDescription, true)}>Regenerate</button>
+                  <button className="btn btn-link" onClick={() => handleCardClick(mp3Url, responseEpisodeDescription, true)}>Regenerate</button>
                   <button className="btn btn-link" onClick={handleCopyToClipboard}>Copy to Clipboard</button>
                   <button className="btn btn-success" onClick={handlePostToLinkedIn}>Post to LinkedIn</button>
                 </div>
               </div>
             )}
             {loading && (
-              <button className="btn btn-link" onClick={() => setShowModal(false)}>Close</button>
+              <button className="btn btn-link" onClick={() => closeModal()}>Close</button>
             )}
           </div>
         </div>
