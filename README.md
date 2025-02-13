@@ -253,7 +253,7 @@ WITH (
   'provider'='openai',
   'task'='text_generation',
   'openai.model_version' = 'gpt-4',
-  'openai.system_prompt' = 'You are an in AI, databases, and data engineering.
+  'openai.system_prompt' = 'You are an expert in AI, databases, and data engineering.
     You need to write a LinkedIn post based on the following podcast transcription and description.
     The post should summarize the key points, be concise, direct, free of jargon, but thought-provoking.
     The post should demonstrate a deep understanding of the material, adding your own takes on the material.
